@@ -86,6 +86,13 @@ Returns the name of the given log level as a string.
 If the library is compiled with `-DLOG_USE_COLOR` ANSI color escape codes will
 be used when printing.
 
+#### LOG_STDOUT_INCLUDE_FILE_AND_LINE
+
+If the library is compiled with `-DLOG_STDOUT_INCLUDE_FILE_AND_LINE` file name and line of the log lines origin will
+be displayed in the log. Because some compilers include rather long full paths its ommited for better readability in i.e. serial console.
+
+The file callback output always contains this information.
+
 ## License
 
 This library is free software; you can redistribute it and/or modify it under

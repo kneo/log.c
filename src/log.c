@@ -56,13 +56,21 @@ void init_log()
 
 static void stdout_callback(log_Event *ev)
 {
-    char buf[16];
-    buf[strftime(buf, sizeof(buf), "%H:%M:%S", ev->time)] = '\0';
+    char buf[64];
+    buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ev->time)] = '\0';
 #ifdef LOG_USE_COLOR
+#ifdef LOG_STDOUT_INCLUDE_FILE_AND_LINE
     fprintf(ev->udata, "%s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ", buf, level_colors[ev->level],
             level_strings[ev->level], ev->file, ev->line);
 #else
+    fprintf(ev->udata, "%s %s%-5s\x1b[0m: ", buf, level_colors[ev->level], level_strings[ev->level]);
+#endif
+#else
+#ifdef LOG_STDOUT_INCLUDE_FILE_AND_LINE
     fprintf(ev->udata, "%s %-5s %s:%d: ", buf, level_strings[ev->level], ev->file, ev->line);
+#else
+    fprintf(ev->udata, "%s %-5s : ", buf, level_strings[ev->level]);
+#endif
 #endif
     vfprintf(ev->udata, ev->fmt, ev->ap);
     fprintf(ev->udata, "\n");
