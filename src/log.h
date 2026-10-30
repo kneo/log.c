@@ -52,10 +52,16 @@ void        init_log();
 const char *log_level_string(int level);
 void        log_set_lock(log_LockFn fn, void *udata);
 void        log_set_localtime(log_LocalTimeFn fn);
+/* Gates the built-in stderr target only; each callback target carries its own
+ * level, checked against log_add_callback()'s level argument instead. */
 void        log_set_level(int level);
 void        log_set_quiet(bool enable);
 int         log_add_callback(log_LogFn fn, void *udata, int level);
+/* log_Event.time is filled in through log_set_localtime()'s provider, or
+ * through the C library's localtime() unless LOG_CALLBACKS_ONLY is defined. */
+#ifndef LOG_CALLBACKS_ONLY
 int         log_add_fp(FILE *fp, int level);
+#endif
 
 void log_log(int level, const char *file, int line, const char *fmt, ...);
 

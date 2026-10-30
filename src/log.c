@@ -51,9 +51,25 @@ void init_log()
 {
     memset(&L, 0, sizeof(L));
 
+#ifndef LOG_CALLBACKS_ONLY
     L.localtime = localtime; // default time function
+#endif
 }
 
+#ifndef LOG_CALLBACKS_ONLY
+/*
+ * The two built-in targets below write through C stdio on FILE* (fprintf,
+ * vfprintf, fflush) and stamp the line with strftime plus the C library's
+ * localtime. On a microcontroller that drags in the whole formatted-output
+ * machinery and its locale tables - tens of kilobytes - for a target an
+ * embedded port never uses, because it installs its own log_add_callback()
+ * writer instead. LOG_CALLBACKS_ONLY compiles this out; log_add_fp() and
+ * log_log() carry the matching guards, and log.h hides the declaration.
+ *
+ * With it defined, ev->time is only filled in when the port supplies a
+ * provider through log_set_localtime(), so a callback must not read ev->time
+ * unless it has done so.
+ */
 static void stdout_callback(log_Event *ev)
 {
     char buf[64];
@@ -86,6 +102,7 @@ static void file_callback(log_Event *ev)
     fprintf(ev->udata, "\n");
     fflush(ev->udata);
 }
+#endif /* LOG_CALLBACKS_ONLY */
 
 static void lock(void)
 {
@@ -142,14 +159,16 @@ int log_add_callback(log_LogFn fn, void *udata, int level)
     return -1;
 }
 
+#ifndef LOG_CALLBACKS_ONLY
 int log_add_fp(FILE *fp, int level)
 {
     return log_add_callback(file_callback, fp, level);
 }
+#endif /* LOG_CALLBACKS_ONLY */
 
 static void init_event(log_Event *ev, void *udata)
 {
-    if (!ev->time)
+    if (!ev->time && L.localtime)
     {
         time_t t = time(NULL);
         ev->time = L.localtime(&t);
@@ -168,6 +187,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 
     lock();
 
+#ifndef LOG_CALLBACKS_ONLY
     if (!L.quiet && level >= L.level)
     {
         init_event(&ev, stderr);
@@ -175,6 +195,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
         stdout_callback(&ev);
         va_end(ev.ap);
     }
+#endif /* LOG_CALLBACKS_ONLY */
 
     for (int i = 0; i < MAX_CALLBACKS && L.callbacks[i].fn; i++)
     {
